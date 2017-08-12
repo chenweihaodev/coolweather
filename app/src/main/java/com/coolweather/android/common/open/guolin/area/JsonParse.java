@@ -1,5 +1,7 @@
-package com.coolweather.android.common.open.guolinchina;
+package com.coolweather.android.common.open.guolin.area;
 
+import android.app.MediaRouteActionProvider;
+import android.content.Intent;
 import android.text.TextUtils;
 
 import com.coolweather.android.entity.area.City;
@@ -11,74 +13,65 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by chenweihao on 2017/8/7.
  */
 
-public class ParseUtil {
+public class JsonParse {
 
-    public static List<Province> parseProvince(String jsonStr){
-        List<Province> list = null;
+    public static List<Area> parseProvince(String jsonStr){
+        List<Area> areaList = new ArrayList<>();
+
         if(!TextUtils.isEmpty(jsonStr)){
-            list = new ArrayList<>();
             try {
                 JSONArray array = new JSONArray(jsonStr);
                 for (int i=0;i<array.length();i++){
                     JSONObject object = array.getJSONObject(i);
-                    Province province = new Province();
-                    province.setProvinceCode(object.getInt("id"));
-                    province.setProvinceName(object.getString("name"));
-                    list.add(province);
+                    areaList.add(new Area(object.getInt("id"),object.getString("name")));
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         }
-        return list;
+        return areaList;
     }
 
-    public static List<City> parseCity(String jsonStr,int provinceId){
-        List<City> cityList = null;
+    public static List<Area> parseCity(String jsonStr){
+        List<Area> areaList = new ArrayList<>();
+
         if(!TextUtils.isEmpty(jsonStr)){
-         cityList = new ArrayList<>();
             try {
                 JSONArray array = new JSONArray(jsonStr);
                 for (int i=0;i<array.length();i++){
                     JSONObject object = array.getJSONObject(i);
-                    City city = new City();
-                    city.setCityCode(object.getInt("id"));
-                    city.setCityName(object.getString("name"));
-                    city.setProvinceId(provinceId);
-                    cityList.add(city);
+                    areaList.add(new Area(object.getInt("id"),object.getString("name")));
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         }
-        return cityList;
+        return areaList;
     }
 
-    public static List<County> parseCounty(String jsonStr,int cityId){
-        List<County> countyList = null;
+    public static List<Area> parseCounty(String jsonStr){
+        List<Area> areaList = new ArrayList<>();
+
         if (!TextUtils.isEmpty(jsonStr)){
-            countyList = new ArrayList<>();
             try {
                 JSONArray array = new JSONArray(jsonStr);
                 for(int i=0;i<array.length();i++){
                     JSONObject object = array.getJSONObject(i);
-                    County county = new County();
-                    county.setCountyName(object.getString("name"));
-                    county.setWeatherId(object.getString("weather_id"));
-                    county.setCityId(cityId);
-                    countyList.add(county);
+                    areaList.add(new Area(object.getInt("id"),object.getString("name"),object.getString("weather_id")));
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         }
-        return countyList;
+        return areaList;
     }
 
 }

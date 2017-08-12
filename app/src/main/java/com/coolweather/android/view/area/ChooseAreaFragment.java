@@ -1,5 +1,6 @@
 package com.coolweather.android.view.area;
 
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -11,7 +12,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
-
 import com.coolweather.android.R;
 import com.coolweather.android.contract.area.IChooseAreaView;
 import com.coolweather.android.contract.area.IChooseAreaPresenter;
@@ -19,7 +19,6 @@ import com.coolweather.android.entity.area.City;
 import com.coolweather.android.entity.area.County;
 import com.coolweather.android.entity.area.Province;
 import com.coolweather.android.presenter.area.ChooseAreaPresenter;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,23 +40,7 @@ public class ChooseAreaFragment extends Fragment implements IChooseAreaView {
 
     private List<String> areaList = new ArrayList<>();
 
-    private List<Province> provinceList;
-
-    private List<City> cityList;
-
-    private List<County> countyList;
-
-    private Province selectedProvince;
-
-    private City selectedCity;
-
-    private int currentLevel;
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        presenter = new ChooseAreaPresenter(this);
-    }
+    ProgressDialog progressDialog;
 
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -74,67 +57,49 @@ public class ChooseAreaFragment extends Fragment implements IChooseAreaView {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        presenter = new ChooseAreaPresenter(this);
+
         listView.setOnItemClickListener((AdapterView<?> parent, View view, int position, long id)-> {
-            if (currentLevel==0){
-                this.selectedProvince = provinceList.get(position);
-                presenter.loadCity(selectedProvince.getProvinceCode());
-            }else if (currentLevel==1){
-                this.selectedCity = cityList.get(position);
-                presenter.loadCounty(selectedProvince.getProvinceCode(),selectedCity.getCityCode());
-            }
+            presenter.chooseArea(position);
         });
 
         backButton.setOnClickListener((View v) -> {
-            if (currentLevel==2){
-                presenter.loadCity(selectedProvince.getProvinceCode());
-            }else if (currentLevel==1){
-                presenter.loadProvince();
-            }
+            presenter.back();
         });
 
         presenter.loadProvince();
     }
 
-    @Override
-    public void showProvinceList(List<Province> provinceList) {
-        titleText.setText("中国");
-        backButton.setVisibility(View.GONE);
-        this.provinceList = provinceList;
+    public void setListView(String title,List<String> list){
+        titleText.setText(title);
         areaList.clear();
-        for (Province province : provinceList){
-            areaList.add(province.getProvinceName());
+        for (String name : list){
+            areaList.add(name);
         }
         adapter.notifyDataSetChanged();
         listView.setSelection(0);
-        this.currentLevel = 0;
     }
 
     @Override
-    public void showCityList(List<City> cityList) {
-        titleText.setText(selectedProvince.getProvinceName());
-        backButton.setVisibility(View.VISIBLE);
-        this.cityList = cityList;
-        areaList.clear();
-        for (City city : cityList){
-            areaList.add(city.getCityName());
-        }
-        adapter.notifyDataSetChanged();
-        listView.setSelection(0);
-        this.currentLevel = 1;
+    public void setBackButtonVisibility(int id) {
+        backButton.setVisibility(id);
     }
 
     @Override
-    public void showCountyList(List<County> countyList) {
-        titleText.setText(selectedCity.getCityName());
-        backButton.setVisibility(View.VISIBLE);
-        this.countyList = countyList;
-        areaList.clear();
-        for (County county:countyList){
-            areaList.add(county.getCountyName());
+    public void showProgressDialog() {
+        if (progressDialog==null){
+            progressDialog = new ProgressDialog(getActivity());
+            progressDialog.setMessage("正在加载...");
+            progressDialog.setCancelable(false);
         }
-        adapter.notifyDataSetChanged();
-        listView.setSelection(0);
-        this.currentLevel = 2;
+        progressDialog.show();
+    }
+
+    @Override
+    public void closeProgressDialog() {
+        if (progressDialog!=null){
+            progressDialog.dismiss();
+        }
     }
 
 }

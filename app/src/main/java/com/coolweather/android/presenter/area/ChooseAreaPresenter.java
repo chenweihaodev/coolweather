@@ -1,10 +1,10 @@
 package com.coolweather.android.presenter.area;
 
-import android.util.Log;
+import android.view.View;
 
-import com.coolweather.android.common.open.guolinchina.AreaRequestService;
-import com.coolweather.android.common.open.guolinchina.ParseUtil;
-import com.coolweather.android.common.util.LogUtil;
+import com.coolweather.android.common.open.guolin.area.Area;
+import com.coolweather.android.common.open.guolin.area.AreaRequest;
+import com.coolweather.android.common.open.guolin.area.JsonParse;
 import com.coolweather.android.contract.area.IChooseAreaPresenter;
 import com.coolweather.android.contract.area.IChooseAreaView;
 import com.coolweather.android.entity.area.City;
@@ -12,6 +12,8 @@ import com.coolweather.android.entity.area.County;
 import com.coolweather.android.entity.area.Province;
 import com.coolweather.android.service.area.IAreaService;
 import com.coolweather.android.service.area.impl.AreaServiceImpl;
+import com.coolweather.android.view.MainActivity;
+import com.coolweather.android.view.weather.WeatherActivity;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,73 +28,165 @@ import okhttp3.Response;
  */
 
 public class ChooseAreaPresenter implements IChooseAreaPresenter {
+
     private static final String TAG = "ChooseAreaPresenter";
+
     IAreaService areaService;
     IChooseAreaView chooseAreaView;
-    AreaRequestService requestService;
+
+    private List<Province> provinceList;
+
+    private List<City> cityList;
+
+    private List<County> countyList;
+
+    private Province selectedProvince;
+
+    private City selectedCity;
+
+    private int currentLevel;
 
     public ChooseAreaPresenter(IChooseAreaView chooseAreaView){
         this.chooseAreaView = chooseAreaView;
         areaService = new AreaServiceImpl();
-        requestService = new AreaRequestService();
     }
 
     @Override
     public void loadProvince() {
-        List<Province> provinceList = areaService.getProvinceList();
+        provinceList = areaService.getProvinceList();
         if (provinceList!=null&&provinceList.size()>0){
-            chooseAreaView.showProvinceList(provinceList);
+            List<String> list = new ArrayList<>();
+            for (Province province : provinceList){
+                list.add(province.getProvinceName());
+            }
+            chooseAreaView.setListView("中国",list);
+            chooseAreaView.setBackButtonVisibility(View.GONE);
+            currentLevel = 0;
         }else{
-            requestService.queryProvince(new Callback() {
+            chooseAreaView.showProgressDialog();
+            AreaRequest.queryProvince(new Callback() {
                 @Override
-                public void onFailure(Call call, IOException e) {}
+                public void onFailure(Call call, IOException e) {
+                    chooseAreaView.closeProgressDialog();
+                }
 
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
-                    areaService.addProvince(ParseUtil.parseProvince(response.body().string()));
+                    List<Area> areaList = JsonParse.parseProvince(response.body().string());
+                    for (Area area : areaList){
+                        Province province = new Province();
+                        province.setProvinceCode(area.id);
+                        province.setProvinceName(area.name);
+                        areaService.addProvince(province);
+                    }
+                    chooseAreaView.closeProgressDialog();
                     chooseAreaView.getActivity().runOnUiThread(()->{loadProvince();});
                 }
             });
         }
     }
 
-    @Override
-    public void loadCity(int province) {
-        List<City> cityList  = areaService.getCityListByProvinceId(province);
+    public void loadCity() {
+        cityList  = areaService.getCityListByProvinceId(selectedProvince.getProvinceCode());
         if (cityList!=null&&cityList.size()>0){
-            chooseAreaView.showCityList(cityList);
+            List<String> list = new ArrayList<>();
+            for (City city : cityList){
+                list.add(city.getCityName());
+            }
+            chooseAreaView.setListView(selectedProvince.getProvinceName(),list);
+            chooseAreaView.setBackButtonVisibility(View.VISIBLE);
+            currentLevel = 1;
         }else{
-            requestService.queryCity(province, new Callback() {
+            chooseAreaView.showProgressDialog();
+            AreaRequest.queryCity(selectedProvince.getProvinceCode(), new Callback() {
                 @Override
-                public void onFailure(Call call, IOException e) {}
+                public void onFailure(Call call, IOException e) {
+                    chooseAreaView.closeProgressDialog();
+                }
 
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
-                    areaService.addCity(ParseUtil.parseCity(response.body().string(),province));
-                    chooseAreaView.getActivity().runOnUiThread(()->{loadCity(province);});
+                    List<Area> areaList = JsonParse.parseCity(response.body().string());
+                    for (Area area : areaList){
+                        City city = new City();
+                        city.setProvinceId(selectedProvince.getProvinceCode());
+                        city.setCityCode(area.id);
+                        city.setCityName(area.name);
+                        areaService.addCity(city);
+                    }
+                    chooseAreaView.closeProgressDialog();
+                    chooseAreaView.getActivity().runOnUiThread(()->{loadCity();});
+                }
+            });
+        }
+    }
+
+    public void loadCounty() {
+
+        countyList = areaService.getCountListByCityId(selectedCity.getCityCode());
+        if (countyList!=null&&countyList.size()>0){
+            List<String> list = new ArrayList<>();
+            for (County county : countyList){
+                list.add(county.getCountyName());
+            }
+            chooseAreaView.setListView(selectedProvince.getProvinceName(),list);
+            chooseAreaView.setBackButtonVisibility(View.VISIBLE);
+            currentLevel = 2;
+        }else {
+            chooseAreaView.showProgressDialog();
+            AreaRequest.queryCounty(selectedProvince.getProvinceCode(),selectedCity.getCityCode(), new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    chooseAreaView.closeProgressDialog();
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    List<Area> areaList = JsonParse.parseCounty(response.body().string());
+                    for (Area area:areaList){
+                        County county = new County();
+                        county.setCityId(selectedCity.getCityCode());
+                        county.setWeatherId(area.weatherId);
+                        county.setCountyName(area.name);
+                        areaService.addCounty(county);
+                    }
+                    chooseAreaView.closeProgressDialog();
+                    chooseAreaView.getActivity().runOnUiThread(()->{loadCounty();});
                 }
             });
         }
     }
 
     @Override
-    public void loadCounty(int province,int city) {
-        List<County> countyList = areaService.getCountListByCityId(city);
-        if (countyList!=null&&countyList.size()>0){
-            chooseAreaView.showCountyList(countyList);
-        }else {
-            requestService.queryCounty(province,city, new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {}
+    public void chooseArea(int position) {
+        if (currentLevel==0){
+            selectedProvince = provinceList.get(position);
+            loadCity();
+        }else if (currentLevel==1){
+            selectedCity = cityList.get(position);
+            loadCounty();
+        }else if (currentLevel==2){
+            County county = countyList.get(position);
+            if (chooseAreaView.getActivity() instanceof MainActivity){
+                WeatherActivity.activityStart(chooseAreaView.getActivity(),county.getWeatherId());
+                chooseAreaView.getActivity().finish();
+            }else if (chooseAreaView.getActivity() instanceof WeatherActivity){
+                WeatherActivity weatherActivity = (WeatherActivity) chooseAreaView.getActivity();
+                weatherActivity.drawerLayout.closeDrawers();
+                weatherActivity.setRefreshing(true);
+                weatherActivity.weatherPresenter.requestWeather(county.getWeatherId());
+            }
 
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    areaService.addCounty(ParseUtil.parseCounty(response.body().string(),city));
-                    chooseAreaView.getActivity().runOnUiThread(()->{loadCounty(province,city);});
-                }
-            });
         }
     }
 
+    @Override
+    public void back() {
+        if (currentLevel==2){
+            loadCity();
+        }else if (currentLevel==1){
+            loadProvince();
+        }
+    }
 
 }

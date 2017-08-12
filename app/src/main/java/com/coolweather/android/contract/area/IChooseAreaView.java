@@ -14,12 +14,14 @@ import java.util.List;
 
 public interface IChooseAreaView {
 
-    void showProvinceList(List<Province> provinceList);
+    void setListView(String title,List<String> list);
 
-    void showCityList(List<City> cityList);
-
-    void showCountyList(List<County> countyList);
+    void setBackButtonVisibility(int id);
 
     Activity getActivity();
+
+    void showProgressDialog();
+
+    void closeProgressDialog();
 
 }

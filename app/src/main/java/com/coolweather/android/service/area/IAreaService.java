@@ -12,15 +12,15 @@ import java.util.List;
 
 public interface IAreaService {
 
-    void addProvince(List<Province> provinceList);
+    void addProvince(Province province);
 
     List<Province> getProvinceList();
 
-    void addCity(List<City> cityList);
+    void addCity(City city);
 
     List<City> getCityListByProvinceId(int provinceId);
 
-    void addCounty(List<County> countyList);
+    void addCounty(County county);
 
     List<County> getCountListByCityId(int cityId);
 

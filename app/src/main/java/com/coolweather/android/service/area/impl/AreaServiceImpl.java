@@ -16,10 +16,8 @@ import java.util.List;
 public class AreaServiceImpl implements IAreaService{
 
     @Override
-    public void addProvince(List<Province> provinceList) {
-        for (Province province : provinceList){
-            province.save();
-        }
+    public void addProvince(Province province) {
+        province.save();
     }
 
     @Override
@@ -28,10 +26,8 @@ public class AreaServiceImpl implements IAreaService{
     }
 
     @Override
-    public void addCity(List<City> cityList) {
-        for (City city : cityList){
-            city.save();
-        }
+    public void addCity(City city) {
+        city.save();
     }
 
     @Override
@@ -40,10 +36,8 @@ public class AreaServiceImpl implements IAreaService{
     }
 
     @Override
-    public void addCounty(List<County> countyList) {
-        for (County county : countyList){
-            county.save();
-        }
+    public void addCounty(County county) {
+        county.save();
     }
 
     @Override

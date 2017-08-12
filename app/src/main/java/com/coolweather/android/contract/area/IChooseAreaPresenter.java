@@ -8,8 +8,8 @@ public interface IChooseAreaPresenter {
 
     void loadProvince();
 
-    void loadCity(int province);
+    void chooseArea(int position);
 
-    void loadCounty(int province,int city);
+    void back();
 
 }
